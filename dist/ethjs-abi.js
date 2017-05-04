@@ -12,41 +12,41 @@
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
-
+/******/
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
-
+/******/
 /******/ 		// Check if module is in cache
 /******/ 		if(installedModules[moduleId])
 /******/ 			return installedModules[moduleId].exports;
-
+/******/
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = installedModules[moduleId] = {
 /******/ 			i: moduleId,
 /******/ 			l: false,
 /******/ 			exports: {}
 /******/ 		};
-
+/******/
 /******/ 		// Execute the module function
 /******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-
+/******/
 /******/ 		// Flag the module as loaded
 /******/ 		module.l = true;
-
+/******/
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-
-
+/******/
+/******/
 /******/ 	// expose the modules object (__webpack_modules__)
 /******/ 	__webpack_require__.m = modules;
-
+/******/
 /******/ 	// expose the module cache
 /******/ 	__webpack_require__.c = installedModules;
-
+/******/
 /******/ 	// identity function for calling harmory imports with the correct context
 /******/ 	__webpack_require__.i = function(value) { return value; };
-
+/******/
 /******/ 	// define getter function for harmory exports
 /******/ 	__webpack_require__.d = function(exports, name, getter) {
 /******/ 		Object.defineProperty(exports, name, {
@@ -55,13 +55,13 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 			get: getter
 /******/ 		});
 /******/ 	};
-
+/******/
 /******/ 	// Object.prototype.hasOwnProperty.call
 /******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-
+/******/
 /******/ 	// __webpack_public_path__
 /******/ 	__webpack_require__.p = "";
-
+/******/
 /******/ 	// Load entry module and return exports
 /******/ 	return __webpack_require__(__webpack_require__.s = 4);
 /******/ })
@@ -5332,6 +5332,8 @@ module.exports = g;
 var BN = __webpack_require__(1);
 var numberToBN = __webpack_require__(10);
 var keccak256 = __webpack_require__(9).keccak_256;
+// require buffer if it isn't present
+var Buf = typeof Buffer === 'undefined' ? __webpack_require__(0) : Buffer;
 
 // from ethereumjs-util
 function stripZeros(aInput) {
@@ -5350,7 +5352,7 @@ function bnToBuffer(bnInput) {
   if (hex.length % 2) {
     hex = '0' + hex;
   }
-  return stripZeros(new Buffer(hex, 'hex'));
+  return stripZeros(new Buf(hex, 'hex'));
 }
 
 function isHexString(value, length) {
@@ -5365,7 +5367,7 @@ function isHexString(value, length) {
 
 function hexOrBuffer(valueInput, name) {
   var value = valueInput; // eslint-disable-line
-  if (!Buffer.isBuffer(value)) {
+  if (!Buf.isBuffer(value)) {
     if (!isHexString(value)) {
       var error = new Error(name ? '[ethjs-abi] invalid ' + name : '[ethjs-abi] invalid hex or buffer, must be a prefixed alphanumeric even length hex string');
       error.reason = '[ethjs-abi] invalid hex string, hex must be prefixed and alphanumeric (e.g. 0x023..)';
@@ -5377,7 +5379,7 @@ function hexOrBuffer(valueInput, name) {
     if (value.length % 2) {
       value = '0' + value;
     }
-    value = new Buffer(value, 'hex');
+    value = new Buf(value, 'hex');
   }
 
   return value;
@@ -5476,13 +5478,13 @@ function coderFixedBytes(length) {
         return value;
       }
 
-      var result = new Buffer(32); // eslint-disable-line
+      var result = new Buf(32); // eslint-disable-line
       result.fill(0);
       value.copy(result);
       return result;
     },
     decode: function decodeFixedBytes(data, offset) {
-      if (data.length < offset + 32) {
+      if (data.length !== 0 && data.length < offset + 32) {
         throw new Error('[ethjs-abi] while decoding fixed bytes, invalid bytes data length: ' + length);
       }
 
@@ -5497,7 +5499,7 @@ function coderFixedBytes(length) {
 var coderAddress = {
   encode: function encodeAddress(valueInput) {
     var value = valueInput; // eslint-disable-line
-    var result = new Buffer(32); // eslint-disable-line
+    var result = new Buf(32); // eslint-disable-line
     if (!isHexString(value, 20)) {
       throw new Error('[ethjs-abi] while encoding address, invalid address value, not alphanumeric 20 byte hex string');
     }
@@ -5507,13 +5509,7 @@ var coderAddress = {
     return result;
   },
   decode: function decodeAddress(data, offset) {
-    if (data.length === 0) {
-      return {
-        consumed: 32,
-        value: '0x'
-      };
-    }
-    if (data.length < offset + 32) {
+    if (data.length !== 0 && data.length < offset + 32) {
       throw new Error('[ethjs-abi] while decoding address data, invalid address data, invalid byte length ' + data.length);
     }
     return {
@@ -5525,14 +5521,14 @@ var coderAddress = {
 
 function encodeDynamicBytesHelper(value) {
   var dataLength = parseInt(32 * Math.ceil(value.length / 32)); // eslint-disable-line
-  var padding = new Buffer(dataLength - value.length); // eslint-disable-line
+  var padding = new Buf(dataLength - value.length); // eslint-disable-line
   padding.fill(0);
 
-  return Buffer.concat([uint256Coder.encode(value.length), value, padding]);
+  return Buf.concat([uint256Coder.encode(value.length), value, padding]);
 }
 
 function decodeDynamicBytesHelper(data, offset) {
-  if (data.length < offset + 32) {
+  if (data.length !== 0 && data.length < offset + 32) {
     throw new Error('[ethjs-abi] while decoding dynamic bytes data, invalid bytes length: ' + data.length + ' should be less than ' + (offset + 32));
   }
 
@@ -5562,7 +5558,7 @@ var coderDynamicBytes = {
 
 var coderString = {
   encode: function encodeString(value) {
-    return encodeDynamicBytesHelper(new Buffer(value, 'utf8'));
+    return encodeDynamicBytesHelper(new Buf(value, 'utf8'));
   },
   decode: function decodeString(data, offset) {
     var result = decodeDynamicBytesHelper(data, offset); // eslint-disable-line
@@ -5575,7 +5571,7 @@ var coderString = {
 function coderArray(coder, lengthInput) {
   return {
     encode: function encodeArray(value) {
-      var result = new Buffer(0); // eslint-disable-line
+      var result = new Buf(0); // eslint-disable-line
       var length = lengthInput; // eslint-disable-line
 
       if (!Array.isArray(value)) {
@@ -5592,7 +5588,7 @@ function coderArray(coder, lengthInput) {
       }
 
       value.forEach(function (resultValue) {
-        result = Buffer.concat([result, coder.encode(resultValue)]);
+        result = Buf.concat([result, coder.encode(resultValue)]);
       });
 
       return result;
@@ -5765,6 +5761,8 @@ var coderString = utils.coderString;
 var coderArray = utils.coderArray;
 var paramTypePart = utils.paramTypePart;
 var getParamCoder = utils.getParamCoder;
+// require buffer if it isn't present
+var Buf = typeof Buffer === 'undefined' ? __webpack_require__(0) : Buffer;
 
 function Result() {}
 
@@ -5797,7 +5795,7 @@ function encodeParams(types, values) {
 
   var offset = 0,
       dynamicOffset = staticSize;
-  var data = new Buffer(staticSize + dynamicSize);
+  var data = new Buf(staticSize + dynamicSize);
 
   parts.forEach(function (part, index) {
     if (part.dynamic) {
@@ -5851,7 +5849,7 @@ function decodeParams(names, types, data) {
 // encode method ABI object with values in an array, output bytecode
 function encodeMethod(method, values) {
   var signature = method.name + '(' + utils.getKeys(method.inputs, 'type').join(',') + ')';
-  var signatureEncoded = '0x' + new Buffer(utils.keccak256(signature), 'hex').slice(0, 4).toString('hex');
+  var signatureEncoded = '0x' + new Buf(utils.keccak256(signature), 'hex').slice(0, 4).toString('hex');
   var paramsEncoded = encodeParams(utils.getKeys(method.inputs, 'type'), values).substring(2);
 
   return '' + signatureEncoded + paramsEncoded;
@@ -5889,7 +5887,7 @@ function decodeEvent(eventObject, data, topics) {
   eventObject.inputs.filter(function (input) {
     return input.indexed;
   }).map(function (input, i) {
-    var topic = new Buffer(topics[i + topicOffset].slice(2), 'hex');
+    var topic = new Buf(topics[i + topicOffset].slice(2), 'hex');
     var coder = getParamCoder(input.type);
     event[input.name] = coder.decode(topic, 0).value;
   });
@@ -6877,6 +6875,10 @@ process.off = noop;
 process.removeListener = noop;
 process.removeAllListeners = noop;
 process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
 
 process.binding = function (name) {
     throw new Error('process.binding is not supported');

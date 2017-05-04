@@ -10,6 +10,8 @@ const coderString = utils.coderString;
 const coderArray = utils.coderArray;
 const paramTypePart = utils.paramTypePart;
 const getParamCoder = utils.getParamCoder;
+// require buffer if it isn't present
+const Buf = (typeof Buffer === 'undefined') ? require('buffer') : Buffer;
 
 function Result() {}
 
@@ -40,7 +42,7 @@ function encodeParams(types, values) {
   });
 
   var offset = 0, dynamicOffset = staticSize;
-  var data = new Buffer(staticSize + dynamicSize);
+  var data = new Buf(staticSize + dynamicSize);
 
   parts.forEach(function(part, index) {
     if (part.dynamic) {
@@ -90,7 +92,7 @@ function decodeParams(names, types, data, useNumberedParams = true) {
 // encode method ABI object with values in an array, output bytecode
 function encodeMethod(method, values) {
   const signature = `${method.name}(${utils.getKeys(method.inputs, 'type').join(',')})`;
-  const signatureEncoded = `0x${(new Buffer(utils.keccak256(signature), 'hex')).slice(0, 4).toString('hex')}`;
+  const signatureEncoded = `0x${(new Buf(utils.keccak256(signature), 'hex')).slice(0, 4).toString('hex')}`;
   const paramsEncoded = encodeParams(utils.getKeys(method.inputs, 'type'), values).substring(2);
 
   return `${signatureEncoded}${paramsEncoded}`;
@@ -122,7 +124,7 @@ function decodeEvent(eventObject, data, topics, useNumberedParams = true) {
   const event = decodeParams(nonIndexedNames, nonIndexedTypes, utils.hexOrBuffer(data), useNumberedParams);
   const topicOffset = eventObject.anonymous ? 0 : 1;
   eventObject.inputs.filter((input) => input.indexed).map((input, i) => {
-    const topic = new Buffer(topics[i + topicOffset].slice(2),'hex');
+    const topic = new Buf(topics[i + topicOffset].slice(2),'hex');
     const coder = getParamCoder(input.type);
     event[input.name] = coder.decode(topic, 0).value;
   })
